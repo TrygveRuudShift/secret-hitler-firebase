@@ -1,103 +1,167 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { auth, db } from '@/lib/firebase';
+import { signInAnonymously, signOut, User } from 'firebase/auth';
+import { collection, addDoc, getDocs, query, orderBy } from 'firebase/firestore';
+
+interface Message {
+  id: string;
+  text: string;
+  timestamp: { toDate?: () => Date } | Date;
+  userId: string;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [user, setUser] = useState<User | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchMessages();
+    }
+  }, [user]);
+
+  const fetchMessages = async () => {
+    try {
+      const messagesRef = collection(db, 'messages');
+      const q = query(messagesRef, orderBy('timestamp', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const messagesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+      setMessages(messagesData);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const handleSignIn = async () => {
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error('Error signing in:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setMessages([]);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const handleSubmitMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !user) return;
+
+    try {
+      await addDoc(collection(db, 'messages'), {
+        text: newMessage,
+        timestamp: new Date(),
+        userId: user.uid
+      });
+      setNewMessage('');
+      fetchMessages();
+    } catch (error) {
+      console.error('Error adding message:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-900">
+          Next.js + Firebase Demo
+        </h1>
+        
+        {!user ? (
+          <div className="text-center">
+            <p className="mb-4 text-gray-600">Sign in to start using the app</p>
+            <button
+              onClick={handleSignIn}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Sign In Anonymously
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="mb-6 p-4 bg-white rounded-lg shadow">
+              <p className="text-sm text-gray-600 mb-2">
+                Signed in as: {user.uid}
+              </p>
+              <button
+                onClick={handleSignOut}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitMessage} className="mb-6 p-4 bg-white rounded-lg shadow">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Enter a message..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Send
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold mb-4">Messages</h2>
+              {messages.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No messages yet. Be the first to send one!</p>
+              ) : (
+                messages.map((message) => (
+                  <div key={message.id} className="bg-white p-4 rounded-lg shadow">
+                    <p className="text-gray-900">{message.text}</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      From: {message.userId.substring(0, 8)}... • {' '}
+                      {typeof message.timestamp === 'object' && message.timestamp && 'toDate' in message.timestamp
+                        ? message.timestamp.toDate?.()?.toLocaleString()
+                        : message.timestamp instanceof Date
+                        ? message.timestamp.toLocaleString()
+                        : 'Unknown time'}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
