@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
-import { GameRoom, Player } from '@/types/game';
+import { GameRoom } from '@/types/game';
 import { GameRoomService } from '@/services/gameRoomService';
 
 interface GameRoomComponentProps {

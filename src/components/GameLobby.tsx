@@ -12,8 +12,6 @@ interface GameLobbyProps {
 
 export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
   const [availableRooms, setAvailableRooms] = useState<GameRoom[]>([]);
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [joiningWithCode, setJoiningWithCode] = useState(false);
   const [gameCode, setGameCode] = useState('');
   const [roomName, setRoomName] = useState('');
   const [playerName, setPlayerName] = useState('');
