@@ -20,6 +20,11 @@ import { GameRoom, Player, GameSettings, GameStatus } from '@/types/game';
 export class GameRoomService {
   private static readonly COLLECTION_NAME = 'gameRooms';
 
+  // Check if Firebase is available
+  private static isFirebaseAvailable(): boolean {
+    return db !== null && db !== undefined;
+  }
+
   // Generate a unique 6-character game code
   static generateGameCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -37,6 +42,10 @@ export class GameRoomService {
     roomName: string,
     settings: Partial<GameSettings> = {}
   ): Promise<string> {
+    if (!this.isFirebaseAvailable()) {
+      throw new Error('Firebase is not available');
+    }
+
     const defaultSettings: GameSettings = {
       allowSpectators: true,
       chatEnabled: true,
@@ -66,7 +75,7 @@ export class GameRoomService {
     };
 
     try {
-      const docRef = await addDoc(collection(db, this.COLLECTION_NAME), {
+      const docRef = await addDoc(collection(db!, this.COLLECTION_NAME), {
         ...gameRoom,
         createdAt: Timestamp.fromDate(gameRoom.createdAt),
         players: gameRoom.players.map(p => ({
@@ -83,8 +92,12 @@ export class GameRoomService {
 
   // Join an existing game room
   static async joinRoom(roomId: string, playerId: string, playerName: string): Promise<boolean> {
+    if (!this.isFirebaseAvailable()) {
+      throw new Error('Firebase is not available');
+    }
+    
     try {
-      const roomRef = doc(db, this.COLLECTION_NAME, roomId);
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
       const roomSnap = await getDoc(roomRef);
       
       if (!roomSnap.exists()) {
@@ -133,7 +146,7 @@ export class GameRoomService {
   // Leave a game room
   static async leaveRoom(roomId: string, playerId: string): Promise<void> {
     try {
-      const roomRef = doc(db, this.COLLECTION_NAME, roomId);
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
       const roomSnap = await getDoc(roomRef);
       
       if (!roomSnap.exists()) {
@@ -191,7 +204,7 @@ export class GameRoomService {
   // Get a specific game room
   static async getRoom(roomId: string): Promise<GameRoom | null> {
     try {
-      const roomRef = doc(db, this.COLLECTION_NAME, roomId);
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
       const roomSnap = await getDoc(roomRef);
       
       if (!roomSnap.exists()) {
@@ -218,7 +231,7 @@ export class GameRoomService {
   static async findRoomByCode(gameCode: string): Promise<GameRoom | null> {
     try {
       const q = query(
-        collection(db, this.COLLECTION_NAME),
+        collection(db!, this.COLLECTION_NAME),
         where('gameCode', '==', gameCode.toUpperCase())
       );
       const querySnapshot = await getDocs(q);
@@ -249,7 +262,7 @@ export class GameRoomService {
     try {
       // Use a simpler query to avoid index requirements
       const q = query(
-        collection(db, this.COLLECTION_NAME),
+        collection(db!, this.COLLECTION_NAME),
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
@@ -277,7 +290,7 @@ export class GameRoomService {
 
   // Subscribe to room changes
   static subscribeToRoom(roomId: string, callback: (room: GameRoom | null) => void) {
-    const roomRef = doc(db, this.COLLECTION_NAME, roomId);
+    const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
     
     return onSnapshot(roomRef, (doc) => {
       if (doc.exists()) {
@@ -301,7 +314,7 @@ export class GameRoomService {
   // Update player ready status
   static async setPlayerReady(roomId: string, playerId: string, isReady: boolean): Promise<void> {
     try {
-      const roomRef = doc(db, this.COLLECTION_NAME, roomId);
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
       const roomSnap = await getDoc(roomRef);
       
       if (!roomSnap.exists()) {
@@ -338,7 +351,7 @@ export class GameRoomService {
   // Update room status
   static async updateRoomStatus(roomId: string, status: GameStatus): Promise<void> {
     try {
-      const roomRef = doc(db, this.COLLECTION_NAME, roomId);
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
       await updateDoc(roomRef, { status });
     } catch (error) {
       console.error('Error updating room status:', error);

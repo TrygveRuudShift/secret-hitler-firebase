@@ -14,7 +14,13 @@ export default function Home() {
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    // Only initialize auth listener if Firebase is available
+    if (!auth) {
+      setAppState('lobby');
+      return;
+    }
+
+    const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
       setUser(user);
       if (user) {
         setAppState('lobby');
@@ -27,6 +33,7 @@ export default function Home() {
   }, []);
 
   const handleSignIn = async () => {
+    if (!auth) return;
     try {
       await signInAnonymously(auth);
     } catch (error) {
@@ -35,6 +42,7 @@ export default function Home() {
   };
 
   const handleSignOut = async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
       setAppState('lobby');
