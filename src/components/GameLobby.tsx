@@ -102,19 +102,45 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Secret Hitler</h1>
-        <p className="text-gray-600">Join a game or create your own room</p>
+        <h1 style={{ 
+          fontSize: "2.5rem", 
+          fontWeight: "800", 
+          color: "var(--foreground)", 
+          marginBottom: "0.5rem",
+          background: "linear-gradient(135deg, var(--primary), var(--accent))",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text"
+        }}>
+          Game Lobby
+        </h1>
+        <p style={{ color: "var(--secondary)", fontSize: "1.125rem" }}>
+          Join a game or create your own room
+        </p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div style={{
+          background: "var(--error)",
+          color: "white",
+          padding: "1rem 1.5rem",
+          borderRadius: "8px",
+          border: "none",
+          fontWeight: "500"
+        }}>
           {error}
         </div>
       )}
 
       {/* Player Name Input */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <label htmlFor="playerName" className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="card">
+        <label htmlFor="playerName" style={{ 
+          display: "block", 
+          fontSize: "0.875rem", 
+          fontWeight: "600", 
+          color: "var(--foreground)", 
+          marginBottom: "0.5rem" 
+        }}>
           Your Name
         </label>
         <input
@@ -122,19 +148,36 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
           id="playerName"
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="input"
           placeholder="Enter your name"
           maxLength={20}
         />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
+        gap: "2rem" 
+      }} className="grid-responsive">
         {/* Create Room */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Create New Game</h2>
+        <div className="card">
+          <h2 style={{ 
+            fontSize: "1.25rem", 
+            fontWeight: "700", 
+            color: "var(--foreground)", 
+            marginBottom: "1rem" 
+          }}>
+            Create New Game
+          </h2>
           <form onSubmit={handleCreateRoom}>
             <div className="mb-4">
-              <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="roomName" style={{ 
+                display: "block", 
+                fontSize: "0.875rem", 
+                fontWeight: "600", 
+                color: "var(--foreground)", 
+                marginBottom: "0.5rem" 
+              }}>
                 Room Name
               </label>
               <input
@@ -142,7 +185,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
                 id="roomName"
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
                 placeholder="Enter room name"
                 maxLength={30}
               />
@@ -150,7 +193,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
             <button
               type="submit"
               disabled={loading || !roomName.trim() || !playerName.trim()}
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn btn-primary w-full"
             >
               {loading ? 'Creating...' : 'Create Room'}
             </button>
@@ -158,11 +201,24 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
         </div>
 
         {/* Join with Code */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Join with Game Code</h2>
+        <div className="card">
+          <h2 style={{ 
+            fontSize: "1.25rem", 
+            fontWeight: "700", 
+            color: "var(--foreground)", 
+            marginBottom: "1rem" 
+          }}>
+            Join with Game Code
+          </h2>
           <form onSubmit={handleJoinWithCode}>
             <div className="mb-4">
-              <label htmlFor="gameCode" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="gameCode" style={{ 
+                display: "block", 
+                fontSize: "0.875rem", 
+                fontWeight: "600", 
+                color: "var(--foreground)", 
+                marginBottom: "0.5rem" 
+              }}>
                 Game Code
               </label>
               <input
@@ -170,7 +226,13 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
                 id="gameCode"
                 value={gameCode}
                 onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-center text-lg"
+                className="input"
+                style={{ 
+                  fontFamily: "var(--font-geist-mono, monospace)", 
+                  textAlign: "center", 
+                  fontSize: "1.125rem", 
+                  letterSpacing: "0.1em" 
+                }}
                 placeholder="ABCD12"
                 maxLength={6}
               />
@@ -178,7 +240,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
             <button
               type="submit"
               disabled={loading || !gameCode.trim() || !playerName.trim()}
-              className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn btn-success w-full"
             >
               {loading ? 'Joining...' : 'Join Game'}
             </button>
@@ -187,36 +249,86 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
       </div>
 
       {/* Available Rooms */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="card">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Available Games</h2>
+          <h2 style={{ 
+            fontSize: "1.25rem", 
+            fontWeight: "700", 
+            color: "var(--foreground)" 
+          }}>
+            Available Games
+          </h2>
           <button
             onClick={loadAvailableRooms}
-            className="px-4 py-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+            style={{
+              padding: "0.5rem 1rem",
+              color: "var(--primary)",
+              background: "transparent",
+              border: "1px solid var(--primary)",
+              borderRadius: "6px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              fontWeight: "500"
+            }}
+            onMouseOver={(e) => {
+              (e.target as HTMLButtonElement).style.background = "var(--primary)";
+              (e.target as HTMLButtonElement).style.color = "white";
+            }}
+            onMouseOut={(e) => {
+              (e.target as HTMLButtonElement).style.background = "transparent";
+              (e.target as HTMLButtonElement).style.color = "var(--primary)";
+            }}
           >
             Refresh
           </button>
         </div>
 
         {availableRooms.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No games available. Create one!</p>
+          <p style={{ 
+            color: "var(--secondary)", 
+            textAlign: "center", 
+            padding: "2rem 0",
+            fontSize: "1rem"
+          }}>
+            No games available. Create one!
+          </p>
         ) : (
           <div className="space-y-2">
             {availableRooms.map((room) => (
-              <div key={room.id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <div 
+                key={room.id} 
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "1rem",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  background: "var(--surface)",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.background = "var(--surface-hover)";
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.background = "var(--surface)";
+                }}
+              >
                 <div>
-                  <h3 className="font-medium">{room.name}</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 style={{ fontWeight: "600", color: "var(--foreground)", marginBottom: "0.25rem" }}>
+                    {room.name}
+                  </h3>
+                  <p style={{ fontSize: "0.875rem", color: "var(--secondary)", marginBottom: "0.25rem" }}>
                     {room.players.length}/{room.maxPlayers} players • Code: {room.gameCode}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p style={{ fontSize: "0.75rem", color: "var(--secondary)" }}>
                     Host: {room.players.find(p => p.isHost)?.name}
                   </p>
                 </div>
                 <button
                   onClick={() => handleJoinRoom(room.id)}
                   disabled={loading || !playerName.trim() || room.players.length >= room.maxPlayers}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn btn-primary"
                 >
                   Join
                 </button>

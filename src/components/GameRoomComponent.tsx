@@ -90,8 +90,29 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
 
   if (!room) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading room...</div>
+      <div style={{ 
+        minHeight: "50vh", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center"
+      }}>
+        <div style={{ 
+          fontSize: "1.25rem", 
+          color: "var(--secondary)",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem"
+        }}>
+          <div style={{
+            width: "1.5rem",
+            height: "1.5rem",
+            border: "2px solid var(--primary)",
+            borderTop: "2px solid transparent",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite"
+          }}></div>
+          Loading room...
+        </div>
       </div>
     );
   }
@@ -99,39 +120,71 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div style={{
+          background: "var(--error)",
+          color: "white",
+          padding: "1rem 1.5rem",
+          borderRadius: "8px",
+          fontWeight: "500"
+        }}>
           {error}
         </div>
       )}
 
       {/* Room Header */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="card">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{room.name}</h1>
+            <h1 style={{ 
+              fontSize: "1.875rem", 
+              fontWeight: "800", 
+              color: "var(--foreground)", 
+              marginBottom: "0.5rem" 
+            }}>
+              {room.name}
+            </h1>
             <div className="flex items-center space-x-4 mt-2">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Game Code:</span>
+                <span style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>Game Code:</span>
                 <button
                   onClick={copyGameCode}
-                  className="font-mono text-lg font-bold text-blue-600 hover:text-blue-800 border border-blue-300 px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                  style={{
+                    fontFamily: "var(--font-geist-mono, monospace)",
+                    fontSize: "1.125rem",
+                    fontWeight: "700",
+                    color: "var(--primary)",
+                    border: `1px solid var(--primary)`,
+                    padding: "0.5rem 0.75rem",
+                    borderRadius: "6px",
+                    background: "var(--background)",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
                   title="Click to copy"
+                  onMouseOver={(e) => {
+                    (e.target as HTMLButtonElement).style.background = "var(--primary)";
+                    (e.target as HTMLButtonElement).style.color = "white";
+                  }}
+                  onMouseOut={(e) => {
+                    (e.target as HTMLButtonElement).style.background = "var(--background)";
+                    (e.target as HTMLButtonElement).style.color = "var(--primary)";
+                  }}
                 >
                   {room.gameCode}
                 </button>
               </div>
-              <div className="text-sm text-gray-600">
+              <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
                 Players: {room.players.length}/{room.maxPlayers}
               </div>
-              <div className="text-sm text-gray-600">
-                Status: <span className="capitalize font-medium">{room.status}</span>
+              <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
+                Status: <span style={{ textTransform: "capitalize", fontWeight: "600" }}>{room.status}</span>
               </div>
             </div>
           </div>
           <button
             onClick={handleLeaveRoom}
             disabled={loading}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn btn-error"
           >
             Leave Room
           </button>
@@ -139,43 +192,90 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
       </div>
 
       {/* Game Rules Reminder */}
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="font-medium text-blue-900 mb-2">Game Requirements</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Minimum {room.minPlayers} players required to start</li>
-          <li>• All players must be ready before the game can begin</li>
+      <div style={{
+        background: "var(--surface)",
+        border: `1px solid var(--border)`,
+        padding: "1rem",
+        borderRadius: "8px"
+      }}>
+        <h3 style={{ 
+          fontWeight: "600", 
+          color: "var(--primary)", 
+          marginBottom: "0.5rem" 
+        }}>
+          Game Requirements
+        </h3>
+        <ul style={{ 
+          fontSize: "0.875rem", 
+          color: "var(--foreground)",
+          listStyle: "none",
+          padding: 0,
+          margin: 0
+        }}>
+          <li style={{ marginBottom: "0.25rem" }}>• Minimum {room.minPlayers} players required to start</li>
+          <li style={{ marginBottom: "0.25rem" }}>• All players must be ready before the game can begin</li>
           <li>• The host can start the game when ready</li>
         </ul>
       </div>
 
       {/* Players List */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Players</h2>
-        <div className="space-y-3">
+      <div className="card">
+        <h2 style={{ 
+          fontSize: "1.25rem", 
+          fontWeight: "700", 
+          color: "var(--foreground)", 
+          marginBottom: "1rem" 
+        }}>
+          Players
+        </h2>
+        <div className="space-y-3" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {room.players.map((player) => (
             <div
               key={player.id}
-              className={`flex items-center justify-between p-3 rounded-lg border ${
-                player.isReady ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'
-              }`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.75rem",
+                borderRadius: "8px",
+                border: `1px solid ${player.isReady ? 'var(--success)' : 'var(--border)'}`,
+                background: player.isReady ? 'var(--surface-hover)' : 'var(--surface)'
+              }}
             >
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${
-                  player.isReady ? 'bg-green-500' : 'bg-gray-400'
-                }`} />
-                <span className="font-medium">{player.name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{
+                  width: "0.75rem",
+                  height: "0.75rem",
+                  borderRadius: "50%",
+                  background: player.isReady ? 'var(--success)' : 'var(--secondary)'
+                }} />
+                <span style={{ fontWeight: "600", color: "var(--foreground)" }}>{player.name}</span>
                 {player.isHost && (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                  <span style={{
+                    padding: "0.25rem 0.5rem",
+                    background: "var(--warning)",
+                    color: "white",
+                    fontSize: "0.75rem",
+                    borderRadius: "9999px",
+                    fontWeight: "600"
+                  }}>
                     Host
                   </span>
                 )}
                 {player.id === user.uid && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  <span style={{
+                    padding: "0.25rem 0.5rem",
+                    background: "var(--accent)",
+                    color: "white",
+                    fontSize: "0.75rem",
+                    borderRadius: "9999px",
+                    fontWeight: "600"
+                  }}>
                     You
                   </span>
                 )}
               </div>
-              <div className="text-sm text-gray-600">
+              <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
                 {player.isReady ? 'Ready' : 'Not Ready'}
               </div>
             </div>
@@ -184,18 +284,14 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
       </div>
 
       {/* Game Controls */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="card">
         <div className="flex items-center justify-between">
           <div>
             {currentPlayer && (
               <button
                 onClick={handleToggleReady}
                 disabled={loading}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  currentPlayer.isReady
-                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
+                className={`btn ${currentPlayer.isReady ? 'btn-warning' : 'btn-success'}`}
               >
                 {loading ? 'Updating...' : currentPlayer.isReady ? 'Not Ready' : 'Ready Up'}
               </button>
@@ -203,8 +299,12 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
           </div>
 
           {isHost && (
-            <div className="text-right">
-              <div className="text-sm text-gray-600 mb-2">
+            <div style={{ textAlign: "right" }}>
+              <div style={{ 
+                fontSize: "0.875rem", 
+                color: "var(--secondary)", 
+                marginBottom: "0.5rem" 
+              }}>
                 {canStartGame 
                   ? 'All players ready! You can start the game.' 
                   : `Need ${room.minPlayers - room.players.length} more players and all players ready.`
@@ -213,7 +313,8 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
               <button
                 onClick={handleStartGame}
                 disabled={loading || !canStartGame}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="btn btn-primary"
+                style={{ fontSize: "1rem", padding: "0.75rem 1.5rem" }}
               >
                 {loading ? 'Starting...' : 'Start Game'}
               </button>
