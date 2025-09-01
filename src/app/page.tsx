@@ -85,77 +85,36 @@ export default function Home() {
   }
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      {/* Header */}
-      <header style={{
-        background: "var(--surface)",
-        boxShadow: "0 1px 3px var(--shadow)",
-        borderBottom: "1px solid var(--border)"
-      }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <h1 style={{ 
-                fontSize: "1.5rem", 
-                fontWeight: "800", 
-                color: "var(--foreground)" 
-              }}>
-                Secret Hitler
-              </h1>
-              {appState !== 'lobby' && (
-                <button
-                  onClick={handleLeaveRoom}
-                  style={{ 
-                    color: "var(--primary)", 
-                    fontWeight: "600",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "color 0.2s ease"
-                  }}
-                  onMouseOver={(e) => {
-                    (e.target as HTMLButtonElement).style.color = "var(--primary-hover)";
-                  }}
-                  onMouseOut={(e) => {
-                    (e.target as HTMLButtonElement).style.color = "var(--primary)";
-                  }}
-                >
-                  ← Back to Lobby
-                </button>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <span style={{ 
-                    fontSize: "0.875rem", 
-                    color: "var(--secondary)" 
-                  }}>
-                    Signed in as: {user.uid.substring(0, 8)}...
-                  </span>
-                  <button
-                    onClick={handleSignOut}
-                    className="btn btn-error"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleSignIn}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-                >
-                  Sign In to Play
-                </button>
-              )}
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Main Content */}
+      <main style={{ flex: 1 }} className="py-8">
+        {/* Back to Lobby Button (if not in lobby) */}
+        {appState !== 'lobby' && (
+          <div style={{ marginBottom: "1rem", padding: "0 1rem" }}>
+            <div className="max-w-7xl mx-auto">
+              <button
+                onClick={handleLeaveRoom}
+                style={{ 
+                  color: "var(--primary)", 
+                  fontWeight: "600",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "color 0.2s ease",
+                  fontSize: "0.875rem"
+                }}
+                onMouseOver={(e) => {
+                  (e.target as HTMLButtonElement).style.color = "var(--primary-hover)";
+                }}
+                onMouseOut={(e) => {
+                  (e.target as HTMLButtonElement).style.color = "var(--primary)";
+                }}
+              >
+                ← Back to Lobby
+              </button>
             </div>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="py-8">
+        )}
         {!user ? (
           <div className="card max-w-md mx-auto text-center">
             <h2 style={{ 
@@ -226,6 +185,32 @@ export default function Home() {
           </>
         )}
       </main>
+
+      {/* Footer with Sign Out */}
+      {user && (
+        <footer style={{
+          background: "var(--surface)",
+          borderTop: "1px solid var(--border)",
+          padding: "1rem",
+          boxShadow: "0 -2px 4px var(--shadow)"
+        }}>
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <span style={{ 
+              fontSize: "0.875rem", 
+              color: "var(--secondary)" 
+            }}>
+              Signed in as: {user.uid.substring(0, 8)}...
+            </span>
+            <button
+              onClick={handleSignOut}
+              className="btn btn-error"
+              style={{ fontSize: "0.875rem" }}
+            >
+              Sign Out
+            </button>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

@@ -167,8 +167,8 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
           }}>
             Create New Game
           </h2>
-          <form onSubmit={handleCreateRoom}>
-            <div className="mb-4">
+          <form onSubmit={handleCreateRoom} className="form-container">
+            <div className="form-group">
               <label htmlFor="roomName" style={{ 
                 display: "block", 
                 fontSize: "0.875rem", 
@@ -208,8 +208,8 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
           }}>
             Join with Game Code
           </h2>
-          <form onSubmit={handleJoinWithCode}>
-            <div className="mb-4">
+          <form onSubmit={handleJoinWithCode} className="form-container">
+            <div className="form-group">
               <label htmlFor="gameCode" style={{ 
                 display: "block", 
                 fontSize: "0.875rem", 
