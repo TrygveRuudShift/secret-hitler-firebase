@@ -14,6 +14,7 @@ import {
   arrayRemove,
   Timestamp 
 } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 import { db } from '@/lib/firebase';
 import { GameRoom, Player, GameSettings, GameStatus } from '@/types/game';
 
@@ -35,10 +36,25 @@ export class GameRoomService {
     return result;
   }
 
+  // Helper method to create a Player object from Firebase User
+  static createPlayerFromUser(user: User, playerName: string, isHost: boolean = false): Player {
+    return {
+      id: user.uid,
+      name: playerName,
+      displayName: user.displayName || undefined,
+      email: user.email || undefined,
+      photoURL: user.photoURL || undefined,
+      isHost,
+      joinedAt: new Date(),
+      isReady: false,
+      isAnonymous: user.isAnonymous
+    };
+  }
+
   // Create a new game room
   static async createRoom(
-    hostId: string, 
-    hostName: string, 
+    user: User, 
+    playerName: string, 
     roomName: string,
     settings: Partial<GameSettings> = {}
   ): Promise<string> {
@@ -54,17 +70,11 @@ export class GameRoomService {
       ...settings
     };
 
-    const host: Player = {
-      id: hostId,
-      name: hostName,
-      isHost: true,
-      joinedAt: new Date(),
-      isReady: false
-    };
+    const host: Player = this.createPlayerFromUser(user, playerName, true);
 
     const gameRoom: Omit<GameRoom, 'id'> = {
       name: roomName,
-      hostId,
+      hostId: user.uid,
       players: [host],
       maxPlayers: 10,
       minPlayers: 5,
@@ -91,7 +101,7 @@ export class GameRoomService {
   }
 
   // Join an existing game room
-  static async joinRoom(roomId: string, playerId: string, playerName: string): Promise<boolean> {
+  static async joinRoom(roomId: string, user: User, playerName: string): Promise<boolean> {
     if (!this.isFirebaseAvailable()) {
       throw new Error('Firebase is not available');
     }
@@ -112,7 +122,7 @@ export class GameRoomService {
       }
 
       // Check if player is already in room
-      if (roomData.players.some(p => p.id === playerId)) {
+      if (roomData.players.some(p => p.id === user.uid)) {
         throw new Error('Player already in room');
       }
 
@@ -121,13 +131,7 @@ export class GameRoomService {
         throw new Error('Game has already started');
       }
 
-      const newPlayer: Player = {
-        id: playerId,
-        name: playerName,
-        isHost: false,
-        joinedAt: new Date(),
-        isReady: false
-      };
+      const newPlayer: Player = this.createPlayerFromUser(user, playerName, false);
 
       await updateDoc(roomRef, {
         players: arrayUnion({

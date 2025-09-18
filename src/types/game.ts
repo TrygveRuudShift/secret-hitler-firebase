@@ -1,10 +1,14 @@
 export interface Player {
   id: string;
   name: string;
+  displayName?: string; // From Google account or other providers
+  email?: string; // From authenticated accounts
+  photoURL?: string; // Profile picture from providers
   isHost: boolean;
   joinedAt: Date;
   isReady: boolean;
   avatar?: string;
+  isAnonymous?: boolean; // Track if using anonymous auth
 }
 
 export interface GameRoom {

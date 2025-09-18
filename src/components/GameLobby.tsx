@@ -20,7 +20,12 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
 
   useEffect(() => {
     loadAvailableRooms();
-  }, []);
+    
+    // Auto-populate player name with Google account display name if available
+    if (user.displayName && !playerName) {
+      setPlayerName(user.displayName);
+    }
+  }, [user, playerName]);
 
   const loadAvailableRooms = async () => {
     try {
@@ -41,7 +46,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
 
     try {
       const roomId = await GameRoomService.createRoom(
-        user.uid,
+        user,
         playerName.trim(),
         roomName.trim()
       );
@@ -64,7 +69,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
     setError(null);
 
     try {
-      await GameRoomService.joinRoom(roomId, user.uid, playerName.trim());
+      await GameRoomService.joinRoom(roomId, user, playerName.trim());
       onJoinRoom(roomId);
     } catch (error: any) {
       console.error('Error joining room:', error);
@@ -87,7 +92,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
         setError('Game not found with that code');
         return;
       }
-      await GameRoomService.joinRoom(room.id, user.uid, playerName.trim());
+      await GameRoomService.joinRoom(room.id, user, playerName.trim());
       onJoinRoom(room.id);
     } catch (error: any) {
       console.error('Error joining with code:', error);
@@ -139,7 +144,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
           color: "var(--foreground)", 
           marginBottom: "0.5rem" 
         }}>
-          Your Name
+          Your Name {user.displayName && <span style={{ color: "var(--secondary)", fontWeight: "400" }}>(from Google account)</span>}
         </label>
         <input
           type="text"
@@ -147,9 +152,18 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           className="input"
-          placeholder="Enter your name"
+          placeholder={user.displayName ? user.displayName : "Enter your name"}
           maxLength={20}
         />
+        {user.displayName && (
+          <p style={{ 
+            fontSize: "0.75rem", 
+            color: "var(--secondary)", 
+            marginTop: "0.25rem" 
+          }}>
+            You can change this name if you'd like to use a different display name in the game.
+          </p>
+        )}
       </div>
 
       <div style={{ 

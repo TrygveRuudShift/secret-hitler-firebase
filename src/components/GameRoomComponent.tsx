@@ -243,13 +243,41 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <div style={{
-                  width: "0.75rem",
-                  height: "0.75rem",
-                  borderRadius: "50%",
-                  background: player.isReady ? 'var(--success)' : 'var(--secondary)'
-                }} />
-                <span style={{ fontWeight: "600", color: "var(--foreground)" }}>{player.name}</span>
+                {player.photoURL ? (
+                  <img 
+                    src={player.photoURL} 
+                    alt={`${player.name}'s profile`}
+                    style={{
+                      width: "2rem",
+                      height: "2rem",
+                      borderRadius: "50%",
+                      border: `2px solid ${player.isReady ? 'var(--success)' : 'var(--secondary)'}`
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: "2rem",
+                    height: "2rem",
+                    borderRadius: "50%",
+                    background: player.isReady ? 'var(--success)' : 'var(--secondary)',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: "600",
+                    fontSize: "0.875rem"
+                  }}>
+                    {player.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+                  <span style={{ fontWeight: "600", color: "var(--foreground)" }}>{player.name}</span>
+                  {player.displayName && player.name !== player.displayName && (
+                    <span style={{ fontSize: "0.75rem", color: "var(--secondary)" }}>
+                      ({player.displayName})
+                    </span>
+                  )}
+                </div>
                 {player.isHost && (
                   <span style={{
                     padding: "0.25rem 0.5rem",
