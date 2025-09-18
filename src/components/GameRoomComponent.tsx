@@ -244,6 +244,7 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                 {player.photoURL ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img 
                     src={player.photoURL} 
                     alt={`${player.name}'s profile`}

@@ -161,7 +161,7 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
             color: "var(--secondary)", 
             marginTop: "0.25rem" 
           }}>
-            You can change this name if you'd like to use a different display name in the game.
+            You can change this name if you&apos;d like to use a different display name in the game.
           </p>
         )}
       </div>
