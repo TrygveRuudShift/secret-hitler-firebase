@@ -26,6 +26,25 @@ export class GameRoomService {
     return db !== null && db !== undefined;
   }
 
+  // Helper to safely convert Date or Timestamp to Timestamp
+  private static toTimestamp(dateOrTimestamp: Date | Timestamp): Timestamp {
+    if (dateOrTimestamp instanceof Timestamp) {
+      return dateOrTimestamp;
+    }
+    return Timestamp.fromDate(dateOrTimestamp);
+  }
+
+  // Helper to remove undefined values from objects (Firestore doesn't allow undefined)
+  private static cleanObject<T extends Record<string, any>>(obj: T): Partial<T> {
+    const cleaned: Partial<T> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key as keyof T] = value;
+      }
+    }
+    return cleaned;
+  }
+
   // Generate a unique 6-character game code
   static generateGameCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -49,6 +68,43 @@ export class GameRoomService {
       isReady: false,
       isAnonymous: user.isAnonymous
     };
+  }
+
+  // Check if a player is already in any room
+  static async findPlayerCurrentRoom(playerId: string): Promise<GameRoom | null> {
+    if (!this.isFirebaseAvailable()) {
+      return null;
+    }
+
+    try {
+      const q = query(
+        collection(db!, this.COLLECTION_NAME),
+        where('players', 'array-contains-any', [{ id: playerId }])
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        return null;
+      }
+
+      // Return the first room found (player should only be in one room)
+      const roomDoc = querySnapshot.docs[0];
+      const roomData = roomDoc.data();
+      
+      return {
+        id: roomDoc.id,
+        ...roomData,
+        createdAt: roomData.createdAt.toDate(),
+        players: roomData.players.map((p: any) => ({
+          ...p,
+          joinedAt: p.joinedAt.toDate()
+        }))
+      } as GameRoom;
+    } catch (error) {
+      console.error('Error finding player current room:', error);
+      return null;
+    }
   }
 
   // Create a new game room
@@ -87,10 +143,10 @@ export class GameRoomService {
     try {
       const docRef = await addDoc(collection(db!, this.COLLECTION_NAME), {
         ...gameRoom,
-        createdAt: Timestamp.fromDate(gameRoom.createdAt),
+        createdAt: this.toTimestamp(gameRoom.createdAt),
         players: gameRoom.players.map(p => ({
-          ...p,
-          joinedAt: Timestamp.fromDate(p.joinedAt)
+          ...this.cleanObject(p),
+          joinedAt: this.toTimestamp(p.joinedAt)
         }))
       });
       return docRef.id;
@@ -116,17 +172,39 @@ export class GameRoomService {
 
       const roomData = roomSnap.data() as GameRoom;
       
-      // Check if room is full
-      if (roomData.players.length >= roomData.maxPlayers) {
+      // Check if room is full (but allow existing players to rejoin)
+      const existingPlayer = roomData.players.find(p => p.id === user.uid);
+      if (!existingPlayer && roomData.players.length >= roomData.maxPlayers) {
         throw new Error('Game room is full');
       }
 
-      // Check if player is already in room
-      if (roomData.players.some(p => p.id === user.uid)) {
-        throw new Error('Player already in room');
+      // If player is already in room, allow them to rejoin (update their info)
+      if (existingPlayer) {
+        // Update existing player's information (name might have changed)
+        const updatedPlayer: Player = this.createPlayerFromUser(user, playerName, existingPlayer.isHost);
+        // Preserve some existing state
+        updatedPlayer.isReady = existingPlayer.isReady;
+        updatedPlayer.joinedAt = existingPlayer.joinedAt;
+
+        // Remove old player data and add updated player data
+        await updateDoc(roomRef, {
+          players: arrayRemove({
+            ...this.cleanObject(existingPlayer),
+            joinedAt: this.toTimestamp(existingPlayer.joinedAt)
+          })
+        });
+
+        await updateDoc(roomRef, {
+          players: arrayUnion({
+            ...this.cleanObject(updatedPlayer),
+            joinedAt: this.toTimestamp(updatedPlayer.joinedAt)
+          })
+        });
+
+        return true; // Successfully rejoined
       }
 
-      // Check if game has started
+      // Check if game has started (only for new players)
       if (roomData.status !== 'waiting' && roomData.status !== 'ready') {
         throw new Error('Game has already started');
       }
@@ -135,8 +213,8 @@ export class GameRoomService {
 
       await updateDoc(roomRef, {
         players: arrayUnion({
-          ...newPlayer,
-          joinedAt: Timestamp.fromDate(newPlayer.joinedAt)
+          ...this.cleanObject(newPlayer),
+          joinedAt: this.toTimestamp(newPlayer.joinedAt)
         })
       });
 
@@ -182,8 +260,8 @@ export class GameRoomService {
             await updateDoc(roomRef, {
               hostId: newHost.id,
               players: updatedPlayers.map(p => ({
-                ...p,
-                joinedAt: p.joinedAt instanceof Date ? Timestamp.fromDate(p.joinedAt) : p.joinedAt
+                ...this.cleanObject(p),
+                joinedAt: this.toTimestamp(p.joinedAt)
               }))
             });
           }
@@ -192,15 +270,92 @@ export class GameRoomService {
         // Remove player from room
         await updateDoc(roomRef, {
           players: arrayRemove({
-            ...playerToRemove,
-            joinedAt: playerToRemove.joinedAt instanceof Date 
-              ? Timestamp.fromDate(playerToRemove.joinedAt) 
-              : playerToRemove.joinedAt
+            ...this.cleanObject(playerToRemove),
+            joinedAt: this.toTimestamp(playerToRemove.joinedAt)
           })
         });
       }
     } catch (error) {
       console.error('Error leaving game room:', error);
+      throw error;
+    }
+  }
+
+  // Kick a player from the room (host only)
+  static async kickPlayer(roomId: string, hostId: string, playerIdToKick: string): Promise<void> {
+    if (!this.isFirebaseAvailable()) {
+      throw new Error('Firebase is not available');
+    }
+
+    try {
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
+      const roomSnap = await getDoc(roomRef);
+      
+      if (!roomSnap.exists()) {
+        throw new Error('Game room not found');
+      }
+
+      const roomData = roomSnap.data() as GameRoom;
+      
+      // Verify that the requester is the host
+      if (roomData.hostId !== hostId) {
+        throw new Error('Only the host can kick players');
+      }
+
+      // Cannot kick yourself
+      if (hostId === playerIdToKick) {
+        throw new Error('Host cannot kick themselves');
+      }
+
+      // Find the player to kick
+      const playerToKick = roomData.players.find(p => p.id === playerIdToKick);
+      if (!playerToKick) {
+        throw new Error('Player not found in room');
+      }
+
+      // Remove the player
+      await updateDoc(roomRef, {
+        players: arrayRemove({
+          ...this.cleanObject(playerToKick),
+          joinedAt: this.toTimestamp(playerToKick.joinedAt)
+        })
+      });
+    } catch (error) {
+      console.error('Error kicking player:', error);
+      throw error;
+    }
+  }
+
+  // Delete the entire room (host only)
+  static async deleteRoom(roomId: string, hostId: string): Promise<void> {
+    if (!this.isFirebaseAvailable()) {
+      throw new Error('Firebase is not available');
+    }
+
+    try {
+      const roomRef = doc(db!, this.COLLECTION_NAME, roomId);
+      const roomSnap = await getDoc(roomRef);
+      
+      if (!roomSnap.exists()) {
+        throw new Error('Game room not found');
+      }
+
+      const roomData = roomSnap.data() as GameRoom;
+      
+      // Verify that the requester is the host
+      if (roomData.hostId !== hostId) {
+        throw new Error('Only the host can delete the room');
+      }
+
+      // Can only delete room if game hasn't started
+      if (roomData.status !== 'waiting' && roomData.status !== 'ready') {
+        throw new Error('Cannot delete room after game has started');
+      }
+
+      // Delete the room
+      await deleteDoc(roomRef);
+    } catch (error) {
+      console.error('Error deleting room:', error);
       throw error;
     }
   }
@@ -332,8 +487,8 @@ export class GameRoomService {
 
       await updateDoc(roomRef, {
         players: updatedPlayers.map(p => ({
-          ...p,
-          joinedAt: p.joinedAt instanceof Date ? Timestamp.fromDate(p.joinedAt) : p.joinedAt
+          ...this.cleanObject(p),
+          joinedAt: this.toTimestamp(p.joinedAt)
         }))
       });
 

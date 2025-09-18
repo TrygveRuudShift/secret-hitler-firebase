@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
 import { GameRoom } from '@/types/game';
 import { GameRoomService } from '@/services/gameRoomService';
@@ -17,15 +17,26 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
+
+  const checkExistingRoom = useCallback(async () => {
+    try {
+      const existingRoom = await GameRoomService.findPlayerCurrentRoom(user.uid);
+      setCurrentRoom(existingRoom);
+    } catch (error) {
+      console.error('Error checking existing room:', error);
+    }
+  }, [user.uid]);
 
   useEffect(() => {
     loadAvailableRooms();
+    checkExistingRoom();
     
     // Auto-populate player name with Google account display name if available
     if (user.displayName && !playerName) {
       setPlayerName(user.displayName);
     }
-  }, [user, playerName]);
+  }, [user, playerName, checkExistingRoom]);
 
   const loadAvailableRooms = async () => {
     try {
@@ -34,6 +45,12 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
     } catch (error) {
       console.error('Error loading rooms:', error);
       setError('Failed to load available rooms');
+    }
+  };
+
+  const handleRejoinRoom = () => {
+    if (currentRoom) {
+      onJoinRoom(currentRoom.id);
     }
   };
 
@@ -132,6 +149,43 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
           fontWeight: "500"
         }}>
           {error}
+        </div>
+      )}
+
+      {/* Existing Room Notification */}
+      {currentRoom && (
+        <div style={{
+          background: "var(--warning)",
+          color: "white",
+          padding: "1rem 1.5rem",
+          borderRadius: "8px",
+          border: "none",
+          fontWeight: "500",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}>
+          <div>
+            <strong>You&apos;re already in a room:</strong> {currentRoom.name}
+            <br />
+            <span style={{ fontSize: "0.875rem", opacity: 0.9 }}>
+              Room Code: {currentRoom.gameCode} • {currentRoom.players.length}/{currentRoom.maxPlayers} players
+            </span>
+          </div>
+          <button
+            onClick={handleRejoinRoom}
+            style={{
+              background: "white",
+              color: "var(--warning)",
+              border: "none",
+              padding: "0.5rem 1rem",
+              borderRadius: "6px",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Rejoin Room
+          </button>
         </div>
       )}
 

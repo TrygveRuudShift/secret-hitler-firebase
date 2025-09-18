@@ -16,10 +16,22 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmKick, setConfirmKick] = useState<string | null>(null); // player ID to kick
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     const unsubscribe = GameRoomService.subscribeToRoom(roomId, (updatedRoom) => {
       if (updatedRoom) {
+        // Check if current user is still in the room (might have been kicked)
+        const userStillInRoom = updatedRoom.players.some(p => p.id === user.uid);
+        
+        if (!userStillInRoom) {
+          // User was kicked or removed
+          setError('You have been removed from the room');
+          setTimeout(onLeaveRoom, 2000);
+          return;
+        }
+
         setRoom(updatedRoom);
         // If game has started, transition to game view
         if (updatedRoom.status === 'starting' || updatedRoom.status === 'in_progress') {
@@ -33,7 +45,7 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
     });
 
     return () => unsubscribe();
-  }, [roomId, onLeaveRoom, onStartGame]);
+  }, [roomId, onLeaveRoom, onStartGame, user.uid]);
 
   const currentPlayer = room?.players.find(p => p.id === user.uid);
   const isHost = currentPlayer?.isHost || false;
@@ -85,6 +97,37 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
     if (room) {
       navigator.clipboard.writeText(room.gameCode);
       // You could add a toast notification here
+    }
+  };
+
+  const handleKickPlayer = async (playerIdToKick: string) => {
+    if (!room) return;
+    
+    setLoading(true);
+    try {
+      await GameRoomService.kickPlayer(roomId, user.uid, playerIdToKick);
+      setConfirmKick(null);
+    } catch (error: any) {
+      console.error('Error kicking player:', error);
+      setError(error.message || 'Failed to kick player');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!room) return;
+    
+    setLoading(true);
+    try {
+      await GameRoomService.deleteRoom(roomId, user.uid);
+      setConfirmDelete(false);
+      onLeaveRoom(); // Navigate back to lobby
+    } catch (error: any) {
+      console.error('Error deleting room:', error);
+      setError(error.message || 'Failed to delete room');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -271,7 +314,7 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
                     {player.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem", flex: 1 }}>
                   <span style={{ fontWeight: "600", color: "var(--foreground)" }}>{player.name}</span>
                   {player.displayName && player.name !== player.displayName && (
                     <span style={{ fontSize: "0.75rem", color: "var(--secondary)" }}>
@@ -279,30 +322,51 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
                     </span>
                   )}
                 </div>
-                {player.isHost && (
-                  <span style={{
-                    padding: "0.25rem 0.5rem",
-                    background: "var(--warning)",
-                    color: "white",
-                    fontSize: "0.75rem",
-                    borderRadius: "9999px",
-                    fontWeight: "600"
-                  }}>
-                    Host
-                  </span>
-                )}
-                {player.id === user.uid && (
-                  <span style={{
-                    padding: "0.25rem 0.5rem",
-                    background: "var(--accent)",
-                    color: "white",
-                    fontSize: "0.75rem",
-                    borderRadius: "9999px",
-                    fontWeight: "600"
-                  }}>
-                    You
-                  </span>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {player.isHost && (
+                    <span style={{
+                      padding: "0.25rem 0.5rem",
+                      background: "var(--warning)",
+                      color: "white",
+                      fontSize: "0.75rem",
+                      borderRadius: "9999px",
+                      fontWeight: "600"
+                    }}>
+                      Host
+                    </span>
+                  )}
+                  {player.id === user.uid && (
+                    <span style={{
+                      padding: "0.25rem 0.5rem",
+                      background: "var(--accent)",
+                      color: "white",
+                      fontSize: "0.75rem",
+                      borderRadius: "9999px",
+                      fontWeight: "600"
+                    }}>
+                      You
+                    </span>
+                  )}
+                  {/* Kick button for host */}
+                  {isHost && player.id !== user.uid && !player.isHost && (
+                    <button
+                      onClick={() => setConfirmKick(player.id)}
+                      style={{
+                        background: "var(--error)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "0.25rem 0.5rem",
+                        fontSize: "0.75rem",
+                        cursor: "pointer",
+                        fontWeight: "500"
+                      }}
+                      disabled={loading}
+                    >
+                      Kick
+                    </button>
+                  )}
+                </div>
               </div>
               <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
                 {player.isReady ? 'Ready' : 'Not Ready'}
@@ -339,18 +403,111 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
                   : `Need ${room.minPlayers - room.players.length} more players and all players ready.`
                 }
               </div>
-              <button
-                onClick={handleStartGame}
-                disabled={loading || !canStartGame}
-                className="btn btn-primary"
-                style={{ fontSize: "1rem", padding: "0.75rem 1.5rem" }}
-              >
-                {loading ? 'Starting...' : 'Start Game'}
-              </button>
+              <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={loading}
+                  className="btn btn-error"
+                  style={{ fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                >
+                  Delete Room
+                </button>
+                <button
+                  onClick={handleStartGame}
+                  disabled={loading || !canStartGame}
+                  className="btn btn-primary"
+                  style={{ fontSize: "1rem", padding: "0.75rem 1.5rem" }}
+                >
+                  {loading ? 'Starting...' : 'Start Game'}
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialogs */}
+      {confirmKick && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}>
+          <div className="card" style={{ maxWidth: "400px", margin: "1rem" }}>
+            <h3 style={{ marginBottom: "1rem", color: "var(--foreground)" }}>
+              Kick Player
+            </h3>
+            <p style={{ marginBottom: "1.5rem", color: "var(--secondary)" }}>
+              Are you sure you want to kick {room?.players.find(p => p.id === confirmKick)?.name}? 
+              They will be immediately removed from the game.
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setConfirmKick(null)}
+                className="btn btn-secondary"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleKickPlayer(confirmKick)}
+                className="btn btn-error"
+                disabled={loading}
+              >
+                {loading ? 'Kicking...' : 'Kick Player'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}>
+          <div className="card" style={{ maxWidth: "400px", margin: "1rem" }}>
+            <h3 style={{ marginBottom: "1rem", color: "var(--foreground)" }}>
+              Delete Room
+            </h3>
+            <p style={{ marginBottom: "1.5rem", color: "var(--secondary)" }}>
+              Are you sure you want to delete this room? This action cannot be undone and will 
+              remove all players from the game.
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="btn btn-secondary"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRoom}
+                className="btn btn-error"
+                disabled={loading}
+              >
+                {loading ? 'Deleting...' : 'Delete Room'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
