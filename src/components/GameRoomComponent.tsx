@@ -18,6 +18,8 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
   const [error, setError] = useState<string | null>(null);
   const [confirmKick, setConfirmKick] = useState<string | null>(null); // player ID to kick
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [copyCodeMessage, setCopyCodeMessage] = useState<string | null>(null);
+  const [copyLinkMessage, setCopyLinkMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = GameRoomService.subscribeToRoom(roomId, (updatedRoom) => {
@@ -93,10 +95,26 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
     }
   };
 
-  const copyGameCode = () => {
-    if (room) {
-      navigator.clipboard.writeText(room.gameCode);
-      // You could add a toast notification here
+    const copyGameCode = async () => {
+    if (!room) return;
+    try {
+      await navigator.clipboard.writeText(room.gameCode);
+      setCopyCodeMessage('Game code copied!');
+      setTimeout(() => setCopyCodeMessage(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy game code:', err);
+    }
+  };
+
+  const copyShareableLink = async () => {
+    if (!room) return;
+    try {
+      const shareableLink = `${window.location.origin}/join?code=${room.gameCode}`;
+      await navigator.clipboard.writeText(shareableLink);
+      setCopyLinkMessage('Link copied!');
+      setTimeout(() => setCopyLinkMessage(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy shareable link:', err);
     }
   };
 
@@ -215,6 +233,11 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
                 >
                   {room.gameCode}
                 </button>
+                {copyCodeMessage && (
+                  <span style={{ fontSize: "0.75rem", color: "var(--success)", fontWeight: "600" }}>
+                    {copyCodeMessage}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
                 Players: {room.players.length}/{room.maxPlayers}
@@ -222,6 +245,46 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
               <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
                 Status: <span style={{ textTransform: "capitalize", fontWeight: "600" }}>{room.status}</span>
               </div>
+            </div>
+            
+            {/* Shareable Link Section */}
+            <div className="flex items-center space-x-2 mt-3">
+              <span style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>Share Link:</span>
+              <button
+                onClick={copyShareableLink}
+                style={{
+                  fontFamily: "var(--font-geist-mono, monospace)",
+                  fontSize: "0.875rem",
+                  color: "var(--secondary)",
+                  border: `1px solid var(--border)`,
+                  padding: "0.375rem 0.75rem",
+                  borderRadius: "6px",
+                  background: "var(--background)",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  textDecoration: "underline",
+                  maxWidth: "300px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+                title="Click to copy shareable link"
+                onMouseOver={(e) => {
+                  (e.target as HTMLButtonElement).style.background = "var(--surface)";
+                  (e.target as HTMLButtonElement).style.borderColor = "var(--primary)";
+                }}
+                onMouseOut={(e) => {
+                  (e.target as HTMLButtonElement).style.background = "var(--background)";
+                  (e.target as HTMLButtonElement).style.borderColor = "var(--border)";
+                }}
+              >
+                {typeof window !== 'undefined' ? `${window.location.origin}/join?code=${room.gameCode}` : `Join with code: ${room.gameCode}`}
+              </button>
+              {copyLinkMessage && (
+                <span style={{ fontSize: "0.75rem", color: "var(--success)", fontWeight: "600" }}>
+                  {copyLinkMessage}
+                </span>
+              )}
             </div>
           </div>
           <button
