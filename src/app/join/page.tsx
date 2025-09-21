@@ -9,7 +9,7 @@ import { GameRoomService } from '@/services/gameRoomService';
 import GameLobby from '@/components/GameLobby';
 import GameRoomComponent from '@/components/GameRoomComponent';
 
-type AppState = 'loading' | 'auth' | 'joining' | 'lobby' | 'room' | 'game';
+type AppState = 'loading' | 'auth' | 'username' | 'joining' | 'lobby' | 'room' | 'game';
 
 function JoinGameContent() {
   const router = useRouter();
@@ -35,8 +35,14 @@ function JoinGameContent() {
         // Extract display name from Google account or use email
         const displayName = user.displayName || user.email?.split('@')[0] || '';
         setPlayerName(displayName);
+        
         if (gameCode) {
-          setAppState('joining'); // Automatically try to join when authenticated
+          // If user is anonymous and joining via game code, prompt for username
+          if (user.isAnonymous && !displayName) {
+            setAppState('username');
+          } else {
+            setAppState('joining'); // Automatically try to join when authenticated
+          }
         } else {
           setAppState('lobby'); // No game code, go to lobby
         }
@@ -123,6 +129,11 @@ function JoinGameContent() {
 
   const handleSignOut = async () => {
     try {
+      // If user is in a room, leave it first
+      if (currentRoomId && user) {
+        await GameRoomService.leaveRoom(currentRoomId, user.uid);
+      }
+      
       if (auth) {
         await signOut(auth);
       }
@@ -131,6 +142,11 @@ function JoinGameContent() {
     } catch (error) {
       console.error('Sign out error:', error);
     }
+  };
+
+  const handleUsernameSubmit = (username: string) => {
+    setPlayerName(username.trim());
+    setAppState('joining');
   };
 
   const handleJoinRoom = (roomId: string) => {
@@ -145,10 +161,6 @@ function JoinGameContent() {
 
   const handleStartGame = () => {
     setAppState('game');
-  };
-
-  const handleBackToLobby = () => {
-    setAppState('lobby');
   };
 
   if (appState === 'loading') {
@@ -276,6 +288,119 @@ function JoinGameContent() {
     );
   }
 
+  if (appState === 'username') {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: 'var(--background)',
+        padding: '1rem'
+      }}>
+        <div style={{
+          background: 'var(--surface)',
+          border: `1px solid var(--border)`,
+          borderRadius: '12px',
+          padding: '2rem',
+          maxWidth: '400px',
+          width: '100%',
+          textAlign: 'center'
+        }}>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: '800',
+            color: 'var(--foreground)',
+            marginBottom: '0.5rem'
+          }}>
+            Choose Username
+          </h1>
+          
+          {gameCode && (
+            <p style={{
+              color: 'var(--secondary)',
+              marginBottom: '1.5rem'
+            }}>
+              Game Code: <strong style={{ 
+                fontFamily: 'var(--font-geist-mono, monospace)',
+                color: 'var(--primary)'
+              }}>{gameCode.toUpperCase()}</strong>
+            </p>
+          )}
+
+          <p style={{
+            color: 'var(--secondary)',
+            marginBottom: '1.5rem',
+            fontSize: '0.875rem'
+          }}>
+            Enter a username to join the game
+          </p>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            const username = formData.get('username') as string;
+            if (username && username.trim()) {
+              handleUsernameSubmit(username);
+            }
+          }}>
+            <input
+              type="text"
+              name="username"
+              placeholder="Enter your username"
+              maxLength={20}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '6px',
+                border: `1px solid var(--border)`,
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+                fontSize: '1rem',
+                marginBottom: '1rem'
+              }}
+              autoFocus
+            />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ width: '100%' }}
+              >
+                Join Game
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="btn btn-secondary"
+                style={{ width: '100%' }}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          </form>
+
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--secondary)',
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              marginTop: '1rem'
+            }}
+          >
+            ← Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (appState === 'joining') {
     return (
       <div style={{
@@ -353,6 +478,7 @@ function JoinGameContent() {
 
           <GameLobby
             user={user!}
+            playerName={playerName}
             onJoinRoom={handleJoinRoom}
           />
         </div>
@@ -440,12 +566,6 @@ function JoinGameContent() {
           }}>
             Game implementation coming soon...
           </p>
-          <button
-            onClick={handleBackToLobby}
-            className="btn btn-primary"
-          >
-            Back to Lobby
-          </button>
         </div>
       </div>
     );

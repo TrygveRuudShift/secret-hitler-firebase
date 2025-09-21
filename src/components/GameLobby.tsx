@@ -7,14 +7,15 @@ import { GameRoomService } from '@/services/gameRoomService';
 
 interface GameLobbyProps {
   user: User;
+  playerName?: string;
   onJoinRoom: (roomId: string) => void;
 }
 
-export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
+export default function GameLobby({ user, playerName: propPlayerName, onJoinRoom }: GameLobbyProps) {
   const [availableRooms, setAvailableRooms] = useState<GameRoom[]>([]);
   const [gameCode, setGameCode] = useState('');
   const [roomName, setRoomName] = useState('');
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(propPlayerName || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
@@ -37,6 +38,13 @@ export default function GameLobby({ user, onJoinRoom }: GameLobbyProps) {
       setPlayerName(user.displayName);
     }
   }, [user, playerName, checkExistingRoom]);
+
+  // Sync playerName when prop changes
+  useEffect(() => {
+    if (propPlayerName) {
+      setPlayerName(propPlayerName);
+    }
+  }, [propPlayerName]);
 
   const loadAvailableRooms = async () => {
     try {
