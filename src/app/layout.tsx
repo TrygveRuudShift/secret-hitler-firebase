@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import PWAPrompt from "../components/PWAPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Secret Hitler - Online Game",
   description: "Play Secret Hitler online with friends",
+  manifest: "/manifest.json",
+  themeColor: "#dc2626",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Secret Hitler",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -68,6 +85,7 @@ export default function RootLayout({
           <main style={{ flex: 1, background: "var(--background)" }}>
             {children}
           </main>
+          <PWAPrompt />
         </div>
       </body>
     </html>
