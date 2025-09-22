@@ -179,121 +179,209 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div style={{
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: "2rem 1.5rem",
+      display: "flex",
+      flexDirection: "column",
+      gap: "2rem"
+    }}>
       {error && (
         <div style={{
           background: "var(--error)",
           color: "white",
-          padding: "1rem 1.5rem",
-          borderRadius: "8px",
-          fontWeight: "500"
+          padding: "1.25rem 1.5rem",
+          borderRadius: "12px",
+          fontWeight: "500",
+          textAlign: "center",
+          boxShadow: "0 4px 12px rgba(239, 68, 68, 0.15)"
         }}>
           {error}
         </div>
       )}
 
       {/* Room Header */}
-      <div className="card">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 style={{ 
-              fontSize: "1.875rem", 
-              fontWeight: "800", 
-              color: "var(--foreground)", 
-              marginBottom: "0.5rem" 
-            }}>
-              {room.name}
-            </h1>
-            <div className="flex items-center space-x-4 mt-2">
-              <div className="flex items-center space-x-2">
-                <span style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>Game Code:</span>
-                <button
-                  onClick={copyGameCode}
-                  style={{
-                    fontFamily: "var(--font-geist-mono, monospace)",
-                    fontSize: "1.125rem",
-                    fontWeight: "700",
-                    color: "var(--primary)",
-                    border: `1px solid var(--primary)`,
-                    padding: "0.5rem 0.75rem",
-                    borderRadius: "6px",
-                    background: "var(--background)",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease"
-                  }}
-                  title="Click to copy"
-                  onMouseOver={(e) => {
-                    (e.target as HTMLButtonElement).style.background = "var(--primary)";
-                    (e.target as HTMLButtonElement).style.color = "white";
-                  }}
-                  onMouseOut={(e) => {
-                    (e.target as HTMLButtonElement).style.background = "var(--background)";
-                    (e.target as HTMLButtonElement).style.color = "var(--primary)";
-                  }}
-                >
-                  {room.gameCode}
-                </button>
-                {copyCodeMessage && (
-                  <span style={{ fontSize: "0.75rem", color: "var(--success)", fontWeight: "600" }}>
-                    {copyCodeMessage}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
-                Players: {room.players.length}/{room.maxPlayers}
-              </div>
-              <div style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>
-                Status: <span style={{ textTransform: "capitalize", fontWeight: "600" }}>{room.status}</span>
-              </div>
-            </div>
-            
-            {/* Shareable Link Section */}
-            <div className="flex items-center space-x-2 mt-3">
-              <span style={{ fontSize: "0.875rem", color: "var(--secondary)" }}>Share Link:</span>
-              <button
-                onClick={copyShareableLink}
-                style={{
-                  fontFamily: "var(--font-geist-mono, monospace)",
-                  fontSize: "0.875rem",
-                  color: "var(--secondary)",
-                  border: `1px solid var(--border)`,
-                  padding: "0.375rem 0.75rem",
-                  borderRadius: "6px",
-                  background: "var(--background)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  textDecoration: "underline",
-                  maxWidth: "300px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}
-                title="Click to copy shareable link"
-                onMouseOver={(e) => {
-                  (e.target as HTMLButtonElement).style.background = "var(--surface)";
-                  (e.target as HTMLButtonElement).style.borderColor = "var(--primary)";
-                }}
-                onMouseOut={(e) => {
-                  (e.target as HTMLButtonElement).style.background = "var(--background)";
-                  (e.target as HTMLButtonElement).style.borderColor = "var(--border)";
-                }}
-              >
-                {typeof window !== 'undefined' ? `${window.location.origin}/join?code=${room.gameCode}` : `Join with code: ${room.gameCode}`}
-              </button>
-              {copyLinkMessage && (
-                <span style={{ fontSize: "0.75rem", color: "var(--success)", fontWeight: "600" }}>
-                  {copyLinkMessage}
-                </span>
-              )}
-            </div>
-          </div>
+      <div style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "12px",
+        padding: "1.5rem",
+        boxShadow: "0 4px 12px var(--shadow)"
+      }}>
+        {/* Header with room name and leave button */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "1rem" }}>
+          <h1 style={{ 
+            fontSize: "1.75rem", 
+            fontWeight: "700", 
+            color: "var(--foreground)", 
+            margin: 0,
+            lineHeight: "1.2"
+          }}>
+            {room.name}
+          </h1>
           <button
             onClick={handleLeaveRoom}
             disabled={loading}
             className="btn btn-error"
+            style={{ fontSize: "0.875rem", padding: "0.5rem 1rem" }}
           >
             Leave Room
           </button>
+        </div>
+
+        {/* Game Info Grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "1rem",
+          marginBottom: "1rem"
+        }}>
+          {/* Game Code Card */}
+          <div style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            padding: "1rem",
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--secondary)", marginBottom: "0.5rem", fontWeight: "600" }}>
+              Game Code
+            </div>
+            <button
+              onClick={copyGameCode}
+              style={{
+                fontFamily: "var(--font-geist-mono, monospace)",
+                fontSize: "1.25rem",
+                fontWeight: "800",
+                color: "var(--primary)",
+                border: "2px solid var(--primary)",
+                padding: "0.5rem 0.75rem",
+                borderRadius: "6px",
+                background: "transparent",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                letterSpacing: "0.05em",
+                width: "100%",
+                position: "relative"
+              }}
+              title="Click to copy game code"
+              onMouseOver={(e) => {
+                (e.target as HTMLButtonElement).style.background = "var(--primary)";
+                (e.target as HTMLButtonElement).style.color = "white";
+                (e.target as HTMLButtonElement).style.transform = "translateY(-1px)";
+              }}
+              onMouseOut={(e) => {
+                (e.target as HTMLButtonElement).style.background = "transparent";
+                (e.target as HTMLButtonElement).style.color = "var(--primary)";
+                (e.target as HTMLButtonElement).style.transform = "translateY(0)";
+              }}
+            >
+              {room.gameCode}
+            </button>
+            {copyCodeMessage && (
+              <div style={{ 
+                fontSize: "0.7rem", 
+                color: "var(--success)", 
+                fontWeight: "600", 
+                marginTop: "0.25rem"
+              }}>
+                ✓ {copyCodeMessage}
+              </div>
+            )}
+          </div>
+
+          {/* Players Count Card */}
+          <div style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            padding: "1rem",
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--secondary)", marginBottom: "0.5rem", fontWeight: "600" }}>
+              Players
+            </div>
+            <div style={{ 
+              fontSize: "1.25rem", 
+              fontWeight: "800", 
+              color: "var(--foreground)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.125rem",
+              marginBottom: "0.25rem"
+            }}>
+              <span style={{ color: room.players.length >= room.minPlayers ? "var(--success)" : "var(--warning)" }}>
+                {room.players.length}
+              </span>
+              <span style={{ color: "var(--secondary)", fontSize: "1rem" }}>
+                /{room.maxPlayers}
+              </span>
+            </div>
+            <div style={{ 
+              fontSize: "0.7rem", 
+              color: room.players.length >= room.minPlayers ? "var(--success)" : "var(--warning)", 
+              fontWeight: "600"
+            }}>
+              {room.players.length >= room.minPlayers ? "Ready to start" : `Need ${room.minPlayers - room.players.length} more`}
+            </div>
+          </div>
+        </div>
+
+        {/* Share Link Section */}
+        <div style={{
+          background: "var(--background)",
+          border: "1px solid var(--border)",
+          borderRadius: "8px",
+          padding: "0.75rem"
+        }}>
+          <div style={{ fontSize: "0.75rem", color: "var(--secondary)", marginBottom: "0.5rem", fontWeight: "600" }}>
+            Share Link
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={copyShareableLink}
+              style={{
+                flex: 1,
+                minWidth: "200px",
+                fontFamily: "var(--font-geist-mono, monospace)",
+                fontSize: "0.8rem",
+                color: "var(--secondary)",
+                border: `1px solid var(--border)`,
+                padding: "0.5rem 0.75rem",
+                borderRadius: "6px",
+                background: "var(--background)",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                textAlign: "left",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}
+              title="Click to copy shareable link"
+              onMouseOver={(e) => {
+                (e.target as HTMLButtonElement).style.background = "var(--surface)";
+                (e.target as HTMLButtonElement).style.borderColor = "var(--primary)";
+              }}
+              onMouseOut={(e) => {
+                (e.target as HTMLButtonElement).style.background = "var(--background)";
+                (e.target as HTMLButtonElement).style.borderColor = "var(--border)";
+              }}
+            >
+              {typeof window !== 'undefined' ? `${window.location.origin}/join?code=${room.gameCode}` : `Join with code: ${room.gameCode}`}
+            </button>
+            {copyLinkMessage && (
+              <div style={{ 
+                fontSize: "0.75rem", 
+                color: "var(--success)", 
+                fontWeight: "600",
+                whiteSpace: "nowrap"
+              }}>
+                ✓ {copyLinkMessage}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -326,14 +414,41 @@ export default function GameRoomComponent({ user, roomId, onLeaveRoom, onStartGa
 
       {/* Players List */}
       <div className="card">
-        <h2 style={{ 
-          fontSize: "1.25rem", 
-          fontWeight: "700", 
-          color: "var(--foreground)", 
-          marginBottom: "1rem" 
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          marginBottom: "1rem",
+          flexWrap: "wrap",
+          gap: "0.5rem"
         }}>
-          Players
-        </h2>
+          <h2 style={{ 
+            fontSize: "1.25rem", 
+            fontWeight: "700", 
+            color: "var(--foreground)", 
+            margin: 0
+          }}>
+            Players
+          </h2>
+          <div style={{
+            fontSize: "0.875rem",
+            fontWeight: "600",
+            textTransform: "capitalize",
+            color: room.status === 'waiting' ? "var(--warning)" : room.status === 'in_progress' ? "var(--success)" : "var(--secondary)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem"
+          }}>
+            <div style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              background: room.status === 'waiting' ? "var(--warning)" : room.status === 'in_progress' ? "var(--success)" : "var(--secondary)",
+              animation: room.status === 'waiting' ? "pulse 2s infinite" : "none"
+            }}></div>
+            {room.status === 'waiting' ? 'Waiting' : room.status}
+          </div>
+        </div>
         <div className="space-y-3" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {room.players.map((player) => (
             <div
