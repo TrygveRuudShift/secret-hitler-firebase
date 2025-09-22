@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "Secret Hitler - Online Game",
   description: "Play Secret Hitler online with friends",
   manifest: "/manifest.json",
-  themeColor: "#dc2626",
+  themeColor: "#1a1a1a",
   viewport: {
     width: "device-width",
     initialScale: 1,
@@ -28,11 +28,14 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Secret Hitler",
   },
   formatDetection: {
     telephone: false,
+  },
+  other: {
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 
