@@ -132,7 +132,7 @@ body {
 @media (max-width: 768px) {
   body {
     font-size: 14px;
-    padding: 0 1rem;
+    padding: 0;
   }
   
   h1 { font-size: 1.875rem; }

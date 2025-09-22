@@ -120,20 +120,18 @@ const themes = [
 ];
 
 export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState(themes[0].className);
+  const [theme, setTheme] = useState<string>("");
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     // Load theme from localStorage only on client
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
+    const savedTheme = localStorage.getItem("theme") || themes[0].className;
+    setTheme(savedTheme);
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || !theme) return;
     
     const selected = themes.find((t) => t.className === theme) || themes[0];
     Object.entries(selected.colors).forEach(([key, value]) => {
@@ -142,6 +140,29 @@ export default function ThemeSwitcher() {
     document.documentElement.className = selected.className;
     localStorage.setItem("theme", selected.className);
   }, [theme, isClient]);
+
+  // Prevent hydration mismatch by not rendering until client-side
+  if (!isClient || !theme) {
+    return (
+      <div style={{ 
+        display: "flex", 
+        gap: 8, 
+        alignItems: "center",
+        fontSize: "0.875rem",
+        fontWeight: "500"
+      }}>
+        <span style={{ color: "var(--secondary)", whiteSpace: "nowrap" }}>Theme:</span>
+        <div style={{ 
+          padding: "4px 8px",
+          borderRadius: "6px",
+          border: "1px solid var(--border)",
+          background: "var(--background)",
+          minWidth: "140px",
+          height: "28px"
+        }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
